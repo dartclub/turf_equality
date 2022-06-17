@@ -16,3 +16,6 @@ dev_dependencies:
   build_runner: ^2.1.5
   analyzer: ^2.7.0
   benchmark: ^0.3.0
+
+dependencies: 
+  turf: ^0.0.6+3
