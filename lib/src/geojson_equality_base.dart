@@ -17,10 +17,6 @@ class Equality {
     this.objectComparator = _deepEqual,
   });
 
-  static bool _deepEqual(dynamic obj1, dynamic obj2) {
-    throw UnimplementedError();
-  }
-
   compare(GeoJSONObject g1, GeoJSONObject g2) {
     if (g1.type != g2.type || !_sameLength(g1, g2)) return false;
 
@@ -57,6 +53,10 @@ class Equality {
     return false;
   }
 
+  static bool _deepEqual(dynamic obj1, dynamic obj2) {
+    throw UnimplementedError();
+  }
+
   bool _isMultiType(GeoJSONObject g1) {
     return g1.type == GeoJSONObjectType.multiLineString ||
         g1.type == GeoJSONObjectType.multiPoint ||
@@ -85,7 +85,7 @@ class Equality {
     return true;
   }
 
-  LineString _fixStartIndex(GeometryType sourcePath, GeometryType targetPath) {
+  LineString? _fixStartIndex(GeometryType sourcePath, GeometryType targetPath) {
     //make sourcePath first point same as of targetPath
     var correctPositions = <Position>[], ind = -1;
     for (var i = 0; i < sourcePath.coordinates.length; i++) {
@@ -100,8 +100,9 @@ class Equality {
           .sublist(ind, sourcePath.coordinates.length));
       correctPositions.addAll(
           (sourcePath.coordinates as List<Position>).sublist(1, ind + 1));
+      return LineString(coordinates: correctPositions);
     }
-    return LineString(coordinates: correctPositions);
+    return null;
   }
 
   bool _comparePath(LineString p1, LineString p2) {
@@ -138,54 +139,44 @@ class Equality {
           return false;
         }
       }
+    }
+  }
 
-      bool _compareBBox(g1, g2) {
-        if ((!g1.bbox && !g2.bbox) ||
-            (g1.bbox && g2.bbox && _compareCoords(g1.bbox, g2.bbox))) {
-          return true;
-        }
+  bool _compareBBox(g1, g2) {
+    if ((!g1.bbox && !g2.bbox) ||
+        (g1.bbox && g2.bbox && _compareCoords(g1.bbox, g2.bbox))) {
+      return true;
+    }
+    return false;
+  }
+
+  _compareFeatureCollection(g1, g2) {
+    if (!_sameLength(g1.features, g2.features) || !_compareBBox(g1, g2)) {
+      return false;
+    }
+    for (var i = 0; i < g1.features.length; i++) {
+      if (!compare(g1.features[i], g2.features[i])) {
         return false;
       }
+    }
+    return true;
+  }
 
-      _compareFeatureCollection(g1, g2) {
-        if (!_sameLength(g1.features, g2.features) || !_compareBBox(g1, g2)) {
-          return false;
-        }
-        for (var i = 0; i < g1.features.length; i++) {
-          if (!compare(g1.features[i], g2.features[i])) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      _compareFeature(g1, g2) {
-        if (g1.id != g2.id ||
-            !objectComparator(g1.properties, g2.properties) ||
-            !_compareBBox(g1, g2)) {
-          return false;
-        }
-        return compare(g1.geometry, g2.geometry);
-      }
-
-      _compareGeometryCollection(g1, g2) {
-        if (!_sameLength(g1.geometries, g2.geometries) ||
-            !_compareBBox(g1, g2)) {
-          return false;
-        }
-        for (var i = 0; i < g1.geometries.length; i++) {
-          if (!compare(g1.geometries[i], g2.geometries[i])) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      removePseudo(path) {
-        //TODO to be implement
-        return path;
+  _compareGeometryCollection(g1, g2) {
+    if (!_sameLength(g1.geometries, g2.geometries) || !_compareBBox(g1, g2)) {
+      return false;
+    }
+    for (var i = 0; i < g1.geometries.length; i++) {
+      if (!compare(g1.geometries[i], g2.geometries[i])) {
+        return false;
       }
     }
+    return true;
+  }
+
+  removePseudo(path) {
+    //TODO to be implement
+    return path;
   }
 
   bool _compareLine(LineString path1, LineString path2, int ind,
@@ -195,14 +186,15 @@ class Equality {
     var p2 = pseudoNode ? path2 : removePseudo(path2);
 
     // Todo: figure out the usage and impl. in a separate comparePolygonLine fn.
-    if (isPoly && !_compareCoords(p1[0], p2[0])) {
+    if (isPoly && !_compareCoords(p1.coordinates[0], p2.coordinates[0])) {
       // fix start index of both to same point
       p2 = _fixStartIndex(p2, p1);
-      if (!p2) return false;
+      if (p2 == null) return false;
     }
 
     // for linestring ind =0 and for polygon ind =1
-    var sameDirection = _compareCoords(p1[ind], p2[ind]);
+    var sameDirection =
+        _compareCoords(p1.coordinates[ind], p2.coordinates[ind]);
     if (direction || sameDirection) {
       return _comparePath(p1, p2);
     } else {
@@ -213,6 +205,7 @@ class Equality {
     }
   }
 }
+
 /*
 //index.js
 var deepEqual = require('deep-equal');
