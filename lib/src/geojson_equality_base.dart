@@ -110,7 +110,25 @@ class Equality {
   }
 
   _compareLine(LineString line1, LineString line2) {
-    return false;
+    for (var i = 0; i < line1.coordinates.length; i++) {
+      if (line1.coordinates[i] != line2.coordinates[i]) {
+        if (direction) {
+          return false;
+        } else {
+          return _compareLine(
+            line1,
+            LineString(
+              coordinates: line2.coordinates
+                  .map((e) => e.clone())
+                  .toList()
+                  .reversed
+                  .toList(),
+            ),
+          );
+        }
+      }
+    }
+    return true;
   }
 
   _comparePolygon(Polygon poly1, Polygon poly2) {
