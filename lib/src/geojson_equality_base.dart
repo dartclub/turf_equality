@@ -18,6 +18,7 @@ class Equality {
     this.precision = 17,
     this.direction = false,
     this.shiftedPolygon = false,
+
     //  this.objectComparator = _deepEqual,
   });
 
@@ -109,7 +110,7 @@ class Equality {
     }
   }
 
-  _compareLine(LineString line1, LineString line2) {
+  bool _compareLine(LineString line1, LineString line2) {
     for (var i = 0; i < line1.coordinates.length; i++) {
       if (line1.coordinates[i] != line2.coordinates[i]) {
         if (direction) {
@@ -131,7 +132,33 @@ class Equality {
     return true;
   }
 
-  _comparePolygon(Polygon poly1, Polygon poly2) {
-    return false;
+  bool _comparePolygon(Polygon poly1, Polygon poly2) {
+    List<List<Position>> list1 = poly1
+        .clone()
+        .coordinates
+        .map((e) => e.sublist(0, e.length - 1))
+        .toList();
+    List<List<Position>> list2 = poly2
+        .clone()
+        .coordinates
+        .map((e) => e.sublist(0, e.length - 1))
+        .toList();
+
+    for (var i = 0; i < list1.length; i++) {
+      if (list1[i].length != list2[i].length) {
+        return false;
+      }
+      for (var positionIndex = 0;
+          positionIndex < list1[i].length;
+          positionIndex++) {
+        if (!shiftedPolygon) {
+          if (list1[i][positionIndex] != list2[i][positionIndex]) {
+            return false;
+          }
+        } else {}
+      }
+    }
+
+    return true;
   }
 }
