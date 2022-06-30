@@ -112,7 +112,7 @@ class Equality {
 
   bool _compareLine(LineString line1, LineString line2) {
     for (var i = 0; i < line1.coordinates.length; i++) {
-      if (line1.coordinates[i] != line2.coordinates[i]) {
+      if (!_compareCoords(line1.coordinates[i], line2.coordinates[i])) {
         if (direction) {
           return false;
         } else {
@@ -130,6 +130,15 @@ class Equality {
       }
     }
     return true;
+  }
+
+  bool _compareCoords(Position one, Position two) {
+    return one.alt?.toStringAsFixed(precision) ==
+            two.alt?.toStringAsFixed(precision) &&
+        one.lng.toStringAsFixed(precision) ==
+            two.lng.toStringAsFixed(precision) &&
+        one.lat.toStringAsFixed(precision) ==
+            two.lat.toStringAsFixed(precision);
   }
 
   bool _comparePolygon(Polygon poly1, Polygon poly2) {
@@ -152,14 +161,15 @@ class Equality {
           positionIndex < list1[i].length;
           positionIndex++) {
         if (!shiftedPolygon) {
-          if (list1[i][positionIndex] != list2[i][positionIndex]) {
+          if (!_compareCoords(
+              list1[i][positionIndex], list2[i][positionIndex])) {
             return false;
           }
         } else {
           int diff = list2[i].indexOf(list1[i][0]);
           for (var j = 0; j < list1[i].length; i++) {
-            if (list1[i][j] !=
-                (list2[i][(list2[i].length + j + diff) % list2[i].length])) {
+            if (!_compareCoords(list1[i][j],
+                (list2[i][(list2[i].length + j + diff) % list2[i].length]))) {
               return false;
             }
           }
