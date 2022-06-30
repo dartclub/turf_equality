@@ -31,7 +31,8 @@ class Equality {
     if (g1 == null && g2 == null) {
       return true;
     } else if (_compareTypes<Point>(g1, g2)) {
-      return g1 == g2;
+      return _compareCoords(
+          (g1 as Point).coordinates, (g2 as Point).coordinates);
     } else if (_compareTypes<LineString>(g1, g2)) {
       return _compareLine(g1 as LineString, g2 as LineString);
     } else if (_compareTypes<Polygon>(g1, g2)) {
@@ -157,22 +158,30 @@ class Equality {
       if (list1[i].length != list2[i].length) {
         return false;
       }
-      for (var positionIndex = 0;
-          positionIndex < list1[i].length;
-          positionIndex++) {
-        if (!shiftedPolygon) {
-          if (!_compareCoords(
-              list1[i][positionIndex], list2[i][positionIndex])) {
-            return false;
-          }
-        } else {
-          int diff = list2[i].indexOf(list1[i][0]);
-          for (var j = 0; j < list1[i].length; i++) {
-            if (!_compareCoords(list1[i][j],
-                (list2[i][(list2[i].length + j + diff) % list2[i].length]))) {
-              return false;
-            }
-          }
+      if (!_comparePolygonCoords(list1[i], list2[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _comparePolygonCoords(List<Position> list1, List<Position> list2) {
+    for (var positionIndex = 0;
+        positionIndex < list1[positionIndex].length;
+        positionIndex++) {
+      if (!shiftedPolygon) {
+        if (!_compareCoords(list1[positionIndex], list2[positionIndex])) {
+          return false;
+        }
+      } else if (shiftedPolygon) {
+        int diff = list2.indexOf(list1[0]);
+        if (!_compareCoords(list1[positionIndex],
+            (list2[(list2.length + positionIndex + diff) % list2.length]))) {
+          return false;
+        }
+      } else if (direction) {
+        if (_comparePolygonCoords(list1, list2.reversed.toList())) {
+          return false;
         }
       }
     }
