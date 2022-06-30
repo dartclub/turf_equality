@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:geojson_equality/geojson_equality.dart';
 import 'package:test/test.dart';
@@ -10,6 +9,63 @@ void main() {
   group(
     'GeoJSONEquality',
     () {
+      test('{direction, shiftedPolygon} in Polygons', () {
+        var poly = Polygon(coordinates: [
+          [
+            Position(1, 1),
+            Position(2, 2),
+            Position(3, 3),
+            Position(4, 4),
+            Position(1, 1),
+          ]
+        ]);
+        var poly2 = Polygon(coordinates: [
+          [
+            Position(2, 2),
+            Position(3, 3),
+            Position(4, 4),
+            Position(1, 1),
+            Position(2, 2),
+          ]
+        ]);
+
+        var poly3 = Polygon(coordinates: [
+          [
+            Position(4, 4),
+            Position(3, 3),
+            Position(2, 2),
+            Position(1, 1),
+            Position(4, 4),
+          ]
+        ]);
+
+        var poly4 = Polygon(coordinates: [
+          [
+            Position(3, 3),
+            Position(2, 2),
+            Position(1, 1),
+            Position(4, 4),
+            Position(3, 3),
+          ]
+        ]);
+
+        // normal comparison
+        Equality eq = Equality();
+        expect(eq.compare(poly, poly2), false);
+
+        // shifted positions
+        Equality eq1 = Equality(shiftedPolygon: true);
+        expect(eq1.compare(poly, poly2), true);
+
+        // direction is reversed
+        var eq2 = Equality(direction: true);
+        expect(eq2.compare(poly, poly3), true);
+
+        // direction is reserved and positions are shifted
+        var eq3 = Equality(direction: true, shiftedPolygon: true);
+        expect(eq3.compare(poly, poly4), true);
+      });
+
       var inDir = Directory("./test/in");
       for (var file in inDir.listSync(recursive: true)) {
         if (file is File && file.path.endsWith('.geojson')) {
@@ -85,36 +141,6 @@ void main() {
               }
             },
           );
-
-          test('shifting Polygons', () {
-            var poly = Polygon(coordinates: [
-              [
-                Position(1, 1),
-                Position(2, 2),
-                Position(3, 3),
-                Position(1, 1),
-              ]
-            ]);
-            var poly2 = Polygon(coordinates: [
-              [
-                Position(2, 2),
-                Position(3, 3),
-                Position(1, 1),
-                Position(2, 2),
-              ]
-            ]);
-            var poly3 = Polygon(coordinates: [
-              [
-                Position(3, 3),
-                Position(2, 2),
-                Position(1, 1),
-                Position(3, 3),
-              ]
-            ]);
-            Equality eq = Equality(shiftedPolygon: true);
-            expect(eq.compare(poly, poly2), true);
-            expect(eq.compare(poly, poly3), true);
-          });
         }
       }
     },

@@ -158,30 +158,49 @@ class Equality {
       if (list1[i].length != list2[i].length) {
         return false;
       }
-      if (!_comparePolygonCoords(list1[i], list2[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool _comparePolygonCoords(List<Position> list1, List<Position> list2) {
-    for (var positionIndex = 0;
-        positionIndex < list1[positionIndex].length;
-        positionIndex++) {
-      if (!shiftedPolygon) {
-        if (!_compareCoords(list1[positionIndex], list2[positionIndex])) {
-          return false;
-        }
-      } else if (shiftedPolygon) {
-        int diff = list2.indexOf(list1[0]);
-        if (!_compareCoords(list1[positionIndex],
-            (list2[(list2.length + positionIndex + diff) % list2.length]))) {
-          return false;
-        }
-      } else if (direction) {
-        if (_comparePolygonCoords(list1, list2.reversed.toList())) {
-          return false;
+      for (var positionIndex = 0;
+          positionIndex < list1[i].length;
+          positionIndex++) {
+        if (!shiftedPolygon && !direction) {
+          if (!_compareCoords(
+              list1[i][positionIndex], list2[i][positionIndex])) {
+            return false;
+          }
+        } else if (shiftedPolygon && !direction) {
+          int diff = list2[i].indexOf(list1[i][0]);
+          if (!_compareCoords(
+              list1[i][positionIndex],
+              (list2[i][(list2[i].length + positionIndex + diff) %
+                  list2[i].length]))) {
+            return false;
+          }
+        } else if (direction && !shiftedPolygon) {
+          List<List<Position>> listReversed = poly2
+              .clone()
+              .coordinates
+              .map((e) => e.sublist(0, e.length - 1))
+              .toList()
+              .map((e) => e.reversed.toList())
+              .toList();
+          if (!_compareCoords(
+              list1[i][positionIndex], listReversed[i][positionIndex])) {
+            return false;
+          }
+        } else if (direction && shiftedPolygon) {
+          List<List<Position>> listReversed = poly2
+              .clone()
+              .coordinates
+              .map((e) => e.sublist(0, e.length - 1))
+              .toList()
+              .map((e) => e.reversed.toList())
+              .toList();
+          int diff = listReversed[i].indexOf(list1[i][0]);
+          if (!_compareCoords(
+              list1[i][positionIndex],
+              (listReversed[i][(listReversed[i].length + positionIndex + diff) %
+                  listReversed[i].length]))) {
+            return false;
+          }
         }
       }
     }
