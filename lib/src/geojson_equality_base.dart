@@ -155,10 +155,17 @@ class Equality {
           if (list1[i][positionIndex] != list2[i][positionIndex]) {
             return false;
           }
-        } else {}
+        } else {
+          int diff = list2[i].indexOf(list1[i][0]);
+          for (var j = 0; j < list1[i].length; i++) {
+            if (list1[i][j] !=
+                (list2[i][(list2[i].length + j + diff) % list2[i].length])) {
+              return false;
+            }
+          }
+        }
       }
     }
-
     return true;
   }
 }
