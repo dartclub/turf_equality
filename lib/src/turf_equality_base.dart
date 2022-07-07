@@ -1,6 +1,9 @@
-import 'package:turf/helpers.dart';
+import 'package:turf/turf.dart';
 
-typedef EqualityObjectComparator = bool Function(dynamic obj1, dynamic obj2);
+typedef EqualityObjectComparator = bool Function(
+  GeoJSONObject obj1,
+  GeoJSONObject obj2,
+);
 
 class Equality {
   /// Decides the number of digits after . in a double
