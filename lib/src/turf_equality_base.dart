@@ -6,10 +6,10 @@ typedef EqualityObjectComparator = bool Function(
 );
 
 class Equality {
-  /// Decides the number of digits after . in a double
+  /// Decides the number of fraction digits in a [double]
   final int precision;
 
-  /// Even if the LineStrings are reverse versions of each other but the have similar
+  /// Even if the [LineStrings] are reverse versions of each other but the have similar
   /// [Position]s, they will be considered the same.
   final bool direction;
 
