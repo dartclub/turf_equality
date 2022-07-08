@@ -1,14 +1,10 @@
-name: geojson_equality
-description: A starting point for Dart libraries or applications.
-version: 1.0.0
-publish_to: none #TODO is publishabe? remove: leave
-# homepage:
+name: turf_equality
+description: Comparison of two GeoJSON objects, based on the turf pub-package
+version: 0.0.1
+repository: https://github.com/dartclub/turf_equality
 
 environment:
   sdk: ">=2.17.1 <3.0.0"
-
-# dependencies:
-#   path: ^1.8.0
 
 dev_dependencies:
   dartclub_lint: ^0.4.2
@@ -19,7 +15,4 @@ dev_dependencies:
   benchmark: ^0.3.0
 
 dependencies:
-  turf:
-    git:
-      url: https://github.com/dartclub/turf_dart.git
-      ref: main
+  turf: ^0.0.6

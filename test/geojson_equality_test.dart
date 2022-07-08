@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:geojson_equality/geojson_equality.dart';
+import 'package:turf_equality/turf_equality.dart';
 import 'package:test/test.dart';
 import 'package:turf/helpers.dart';
 
 void main() {
   group(
-    'GeoJSONEquality',
+    'Turf GeoJSONEquality',
     () {
       test('{direction, shiftedPolygon} in Polygons', () {
         var poly = Polygon(coordinates: [

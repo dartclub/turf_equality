@@ -1,0 +1,44 @@
+name: Dart Unit Tests for PRs
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Print Dart SDK version
+        run: dart --version
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze project source
+        run: dart analyze
+        if: always()
+
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
+        if: always()
+
+      - name: Run tests with coverage enabled
+        run: dart test --coverage=./coverage
+        if: always()
+
+      - name: Archive raw coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: raw-coverage
+          path: ./coverage
