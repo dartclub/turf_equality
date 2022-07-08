@@ -67,22 +67,21 @@ void main() {
       });
 
       var inDir = Directory("./test/in");
-      for (var file in inDir.listSync(recursive: true)) {
-        if (file is File && file.path.endsWith('.geojson')) {
+      for (var inFile in inDir.listSync(recursive: true)) {
+        if (inFile is File && inFile.path.endsWith('.geojson')) {
           GeoJSONObject inGeom =
-              GeoJSONObject.fromJson(jsonDecode(file.readAsStringSync()));
+              GeoJSONObject.fromJson(jsonDecode(inFile.readAsStringSync()));
           test(
-            'precision',
+            'precision ${inFile.uri.pathSegments.last}',
             () {
               Equality eq = Equality(precision: 5);
               var outDir = Directory('./test/out');
-              for (var file1 in outDir.listSync(recursive: true)) {
-                if (file1 is File && file1.path.endsWith('.geojson')) {
-                  if (file1.uri.pathSegments.last ==
-                      file.uri.pathSegments.last) {
+              for (var outFile in outDir.listSync(recursive: true)) {
+                if (outFile is File && outFile.path.endsWith('.geojson')) {
+                  if (outFile.uri.pathSegments.last ==
+                      inFile.uri.pathSegments.last) {
                     GeoJSONObject outGeom = GeoJSONObject.fromJson(
-                        jsonDecode(file.readAsStringSync()));
-
+                        jsonDecode(outFile.readAsStringSync()));
                     expect(eq.compare(inGeom, outGeom), true);
                   }
                 }
@@ -90,51 +89,16 @@ void main() {
             },
           );
           test(
-            'multiPolygon with precision',
+            'without precision ${inFile.uri.pathSegments.last}',
             () {
               Equality eq = Equality();
               var outDir = Directory('./test/out');
-              for (var file1 in outDir.listSync(recursive: true)) {
-                if (file1 is File && file1.path.endsWith('.geojson')) {
-                  if (file1.uri.pathSegments.last ==
-                      file.uri.pathSegments.last) {
+              for (var outFile in outDir.listSync(recursive: true)) {
+                if (outFile is File && outFile.path.endsWith('.geojson')) {
+                  if (outFile.uri.pathSegments.last ==
+                      inFile.uri.pathSegments.last) {
                     GeoJSONObject outGeom = GeoJSONObject.fromJson(
-                        jsonDecode(file.readAsStringSync()));
-                    expect(eq.compare(inGeom, outGeom), true);
-                  }
-                }
-              }
-            },
-          );
-
-          test(
-            'multiLineString',
-            () {
-              Equality eq = Equality();
-              var outDir = Directory('./test/out');
-              for (var file1 in outDir.listSync(recursive: true)) {
-                if (file1 is File && file1.path.endsWith('.geojson')) {
-                  if (file1.uri.pathSegments.last ==
-                      file.uri.pathSegments.last) {
-                    GeoJSONObject outGeom = GeoJSONObject.fromJson(
-                        jsonDecode(file.readAsStringSync()));
-                    expect(eq.compare(inGeom, outGeom), true);
-                  }
-                }
-              }
-            },
-          );
-          test(
-            'FeatureCollection<GeometryCollection>',
-            () {
-              Equality eq = Equality();
-              var outDir = Directory('./test/out');
-              for (var file1 in outDir.listSync(recursive: true)) {
-                if (file1 is File && file1.path.endsWith('.geojson')) {
-                  if (file1.uri.pathSegments.last ==
-                      file.uri.pathSegments.last) {
-                    GeoJSONObject outGeom = GeoJSONObject.fromJson(
-                        jsonDecode(file.readAsStringSync()));
+                        jsonDecode(outFile.readAsStringSync()));
                     expect(eq.compare(inGeom, outGeom), true);
                   }
                 }

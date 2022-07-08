@@ -114,7 +114,7 @@ class Equality {
   bool _compareLine(LineString line1, LineString line2) {
     for (var i = 0; i < line1.coordinates.length; i++) {
       if (!_compareCoords(line1.coordinates[i], line2.coordinates[i])) {
-        if (direction) {
+        if (!direction) {
           return false;
         } else {
           return _compareLine(
