@@ -58,15 +58,15 @@ void main() {
         expect(eq1.compare(poly, poly2), true);
 
         // direction is reversed
-        var eq2 = Equality(direction: true);
+        var eq2 = Equality(directionMatters: true);
         expect(eq2.compare(poly, poly3), true);
 
         // direction is reserved and positions are shifted
-        var eq3 = Equality(direction: true, shiftedPolygon: true);
+        var eq3 = Equality(directionMatters: true, shiftedPolygon: true);
         expect(eq3.compare(poly, poly4), true);
       });
 
-      var inDir = Directory("./test/in");
+      var inDir = Directory("./test/examples/in");
       for (var inFile in inDir.listSync(recursive: true)) {
         if (inFile is File && inFile.path.endsWith('.geojson')) {
           GeoJSONObject inGeom =
@@ -75,7 +75,7 @@ void main() {
             'precision ${inFile.uri.pathSegments.last}',
             () {
               Equality eq = Equality(precision: 5);
-              var outDir = Directory('./test/out');
+              var outDir = Directory('./test/examples/out');
               for (var outFile in outDir.listSync(recursive: true)) {
                 if (outFile is File && outFile.path.endsWith('.geojson')) {
                   if (outFile.uri.pathSegments.last ==
