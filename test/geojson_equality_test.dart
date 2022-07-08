@@ -88,23 +88,6 @@ void main() {
               }
             },
           );
-          test(
-            'without precision ${inFile.uri.pathSegments.last}',
-            () {
-              Equality eq = Equality();
-              var outDir = Directory('./test/out');
-              for (var outFile in outDir.listSync(recursive: true)) {
-                if (outFile is File && outFile.path.endsWith('.geojson')) {
-                  if (outFile.uri.pathSegments.last ==
-                      inFile.uri.pathSegments.last) {
-                    GeoJSONObject outGeom = GeoJSONObject.fromJson(
-                        jsonDecode(outFile.readAsStringSync()));
-                    expect(eq.compare(inGeom, outGeom), true);
-                  }
-                }
-              }
-            },
-          );
         }
       }
     },
