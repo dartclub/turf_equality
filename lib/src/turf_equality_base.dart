@@ -12,16 +12,16 @@ class Equality {
 
   /// Even if the [LineStrings] are reverse versions of each other but the have similar
   /// [Position]s, they will be considered the same.
-  final bool directionMatters;
+  final bool reversedGeometries;
 
   /// If true, consider two [Polygon]s with shifted [Position]s as the same.
-  final bool shiftedPolygon;
+  final bool shiftedPolygons;
   // final EqualityObjectComparator objectComparator;
 
   Equality({
     this.precision = 17,
-    this.directionMatters = false,
-    this.shiftedPolygon = false,
+    this.reversedGeometries = false,
+    this.shiftedPolygons = false,
 
     //  this.objectComparator = _deepEqual,
   });
@@ -34,36 +34,24 @@ class Equality {
   bool compare(GeoJSONObject? g1, GeoJSONObject? g2) {
     if (g1 == null && g2 == null) {
       return true;
-    }
-    //
-    else if (_compareTypes<Point>(g1, g2)) {
+    } else if (_compareTypes<Point>(g1, g2)) {
       return _compareCoords(
           (g1 as Point).coordinates, (g2 as Point).coordinates);
-    }
-    //
-    else if (_compareTypes<LineString>(g1, g2)) {
+    } else if (_compareTypes<LineString>(g1, g2)) {
       return _compareLine(g1 as LineString, g2 as LineString);
-    }
-    //
-    else if (_compareTypes<Polygon>(g1, g2)) {
+    } else if (_compareTypes<Polygon>(g1, g2)) {
       return _comparePolygon(g1 as Polygon, g2 as Polygon);
-    }
-    //
-    else if (_compareTypes<Feature>(g1, g2)) {
+    } else if (_compareTypes<Feature>(g1, g2)) {
       return compare((g1 as Feature).geometry, (g2 as Feature).geometry) &&
           g1.id == g2.id;
-    }
-    //
-    else if (_compareTypes<FeatureCollection>(g1, g2)) {
+    } else if (_compareTypes<FeatureCollection>(g1, g2)) {
       for (var i = 0; i < (g1 as FeatureCollection).features.length; i++) {
         if (!compare(g1.features[i], (g2 as FeatureCollection).features[i])) {
           return false;
         }
       }
       return true;
-    }
-    //
-    else if (_compareTypes<GeometryCollection>(g1, g2)) {
+    } else if (_compareTypes<GeometryCollection>(g1, g2)) {
       return compare(
         FeatureCollection(
           features: (g1 as GeometryCollection)
@@ -81,7 +69,6 @@ class Equality {
     }
     //
     else if (_compareTypes<MultiPoint>(g1, g2)) {
-      print("reaches");
       return compare(
         FeatureCollection(
           features: (g1 as MultiPoint)
@@ -136,10 +123,12 @@ class Equality {
 
   bool _compareLine(LineString line1, LineString line2) {
     if (!_compareCoords(line1.coordinates.first, line2.coordinates.first)) {
-      if (directionMatters) {
+      if (reversedGeometries) {
         return false;
       } else {
-        var newLine = line2..coordinates = line2.coordinates.reversed.toList();
+        var newLine = LineString(
+          coordinates: line2.coordinates.reversed.toList(),
+        );
         if (!_compareCoords(
             line1.coordinates.first, newLine.coordinates.first)) {
           return false;
@@ -154,7 +143,6 @@ class Equality {
         }
       }
     }
-
     return true;
   }
 
@@ -188,45 +176,50 @@ class Equality {
       for (var positionIndex = 0;
           positionIndex < list1[i].length;
           positionIndex++) {
-        if (!shiftedPolygon && !directionMatters) {
-          if (!_compareCoords(
-              list1[i][positionIndex], list2[i][positionIndex])) {
-            return false;
+        if (reversedGeometries) {
+          if (shiftedPolygons) {
+            List<List<Position>> listReversed = poly2
+                .clone()
+                .coordinates
+                .map((e) => e.sublist(0, e.length - 1))
+                .toList()
+                .map((e) => e.reversed.toList())
+                .toList();
+            int diff = listReversed[i].indexOf(list1[i][0]);
+            if (!_compareCoords(
+                list1[i][positionIndex],
+                (listReversed[i][
+                    (listReversed[i].length + positionIndex + diff) %
+                        listReversed[i].length]))) {
+              return false;
+            }
+          } else {
+            List<List<Position>> listReversed = poly2
+                .clone()
+                .coordinates
+                .map((e) => e.sublist(0, e.length - 1))
+                .toList()
+                .map((e) => e.reversed.toList())
+                .toList();
+            if (!_compareCoords(
+                list1[i][positionIndex], listReversed[i][positionIndex])) {
+              return false;
+            }
           }
-        } else if (shiftedPolygon && !directionMatters) {
-          int diff = list2[i].indexOf(list1[i][0]);
-          if (!_compareCoords(
-              list1[i][positionIndex],
-              (list2[i][(list2[i].length + positionIndex + diff) %
-                  list2[i].length]))) {
-            return false;
-          }
-        } else if (directionMatters && !shiftedPolygon) {
-          List<List<Position>> listReversed = poly2
-              .clone()
-              .coordinates
-              .map((e) => e.sublist(0, e.length - 1))
-              .toList()
-              .map((e) => e.reversed.toList())
-              .toList();
-          if (!_compareCoords(
-              list1[i][positionIndex], listReversed[i][positionIndex])) {
-            return false;
-          }
-        } else if (directionMatters && shiftedPolygon) {
-          List<List<Position>> listReversed = poly2
-              .clone()
-              .coordinates
-              .map((e) => e.sublist(0, e.length - 1))
-              .toList()
-              .map((e) => e.reversed.toList())
-              .toList();
-          int diff = listReversed[i].indexOf(list1[i][0]);
-          if (!_compareCoords(
-              list1[i][positionIndex],
-              (listReversed[i][(listReversed[i].length + positionIndex + diff) %
-                  listReversed[i].length]))) {
-            return false;
+        } else {
+          if (shiftedPolygons) {
+            int diff = list2[i].indexOf(list1[i][0]);
+            if (!_compareCoords(
+                list1[i][positionIndex],
+                (list2[i][(list2[i].length + positionIndex + diff) %
+                    list2[i].length]))) {
+              return false;
+            }
+          } else {
+            if (!_compareCoords(
+                list1[i][positionIndex], list2[i][positionIndex])) {
+              return false;
+            }
           }
         }
       }

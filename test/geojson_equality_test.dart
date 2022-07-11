@@ -54,15 +54,15 @@ void main() {
         expect(eq.compare(poly, poly2), false);
 
         // shifted positions
-        Equality eq1 = Equality(shiftedPolygon: true);
+        Equality eq1 = Equality(shiftedPolygons: true);
         expect(eq1.compare(poly, poly2), true);
 
         // direction is reversed
-        var eq2 = Equality(directionMatters: true);
+        var eq2 = Equality(reversedGeometries: true);
         expect(eq2.compare(poly, poly3), true);
 
         // direction is reserved and positions are shifted
-        var eq3 = Equality(directionMatters: true, shiftedPolygon: true);
+        var eq3 = Equality(reversedGeometries: true, shiftedPolygons: true);
         expect(eq3.compare(poly, poly4), true);
       });
 

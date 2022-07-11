@@ -15,18 +15,20 @@ void main() {
           GeoJSONObject inGeom =
               GeoJSONObject.fromJson(jsonDecode(inFile.readAsStringSync()));
 
-          Equality eq = Equality();
+          Equality eq = Equality(reversedGeometries: true);
           var outDir = Directory('./test/examples/out');
           for (var outFile in outDir.listSync(recursive: true)) {
             if (outFile is File && outFile.path.endsWith('.geojson')) {
               if (outFile.uri.pathSegments.last ==
-                      inFile.uri.pathSegments.last &&
-                  outFile.uri.pathSegments.last == 'multi-linestring.geojson') {
-                test('without precision ${inFile.uri.pathSegments.last}', () {
-                  GeoJSONObject outGeom = GeoJSONObject.fromJson(
-                      jsonDecode(outFile.readAsStringSync()));
-                  expect(eq.compare(inGeom, outGeom), false);
-                });
+                  inFile.uri.pathSegments.last) {
+                test(
+                  'without precision ${inFile.uri.pathSegments.last}',
+                  () {
+                    GeoJSONObject outGeom = GeoJSONObject.fromJson(
+                        jsonDecode(outFile.readAsStringSync()));
+                    expect(eq.compare(inGeom, outGeom), false);
+                  },
+                );
               }
             }
           }
