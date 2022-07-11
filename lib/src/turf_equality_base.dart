@@ -1,4 +1,5 @@
 import 'package:turf/turf.dart';
+import 'package:turf/helpers.dart' as rounder;
 
 typedef EqualityObjectComparator = bool Function(
   GeoJSONObject obj1,
@@ -11,16 +12,16 @@ class Equality {
 
   /// Even if the [LineStrings] are reverse versions of each other but the have similar
   /// [Position]s, they will be considered the same.
-  final bool direction;
+  final bool reversedGeometries;
 
   /// If true, consider two [Polygon]s with shifted [Position]s as the same.
-  final bool shiftedPolygon;
+  final bool shiftedPolygons;
   // final EqualityObjectComparator objectComparator;
 
   Equality({
     this.precision = 17,
-    this.direction = false,
-    this.shiftedPolygon = false,
+    this.reversedGeometries = false,
+    this.shiftedPolygons = false,
 
     //  this.objectComparator = _deepEqual,
   });
@@ -65,7 +66,9 @@ class Equality {
               .toList(),
         ),
       );
-    } else if (_compareTypes<MultiPoint>(g1, g2)) {
+    }
+    //
+    else if (_compareTypes<MultiPoint>(g1, g2)) {
       return compare(
         FeatureCollection(
           features: (g1 as MultiPoint)
@@ -79,21 +82,23 @@ class Equality {
                 .map((e) => Feature(geometry: Point(coordinates: e)))
                 .toList()),
       );
-    } else if (_compareTypes<MultiLineString>(g1, g2)) {
-      return compare(
-        FeatureCollection(
-          features: (g1 as MultiLineString)
-              .coordinates
-              .map((e) => Feature(geometry: LineString(coordinates: e)))
-              .toList(),
-        ),
-        FeatureCollection(
-            features: (g2 as MultiLineString)
-                .coordinates
-                .map((e) => Feature(geometry: LineString(coordinates: e)))
-                .toList()),
-      );
-    } else if (_compareTypes<MultiPolygon>(g1, g2)) {
+    }
+    //
+    else if (_compareTypes<MultiLineString>(g1, g2)) {
+      if ((g1 as MultiLineString).coordinates.length !=
+          (g2 as MultiLineString).coordinates.length) {
+        return false;
+      }
+      for (var line = 0; line < g1.coordinates.length; line++) {
+        if (!compare(LineString(coordinates: g1.coordinates[line]),
+            LineString(coordinates: g2.coordinates[line]))) {
+          return false;
+        }
+      }
+      return true;
+    }
+    //
+    else if (_compareTypes<MultiPolygon>(g1, g2)) {
       return compare(
         FeatureCollection(
           features: (g1 as MultiPolygon)
@@ -109,27 +114,32 @@ class Equality {
                 )
                 .toList()),
       );
-    } else {
+    }
+    //
+    else {
       return false;
     }
   }
 
   bool _compareLine(LineString line1, LineString line2) {
-    for (var i = 0; i < line1.coordinates.length; i++) {
-      if (!_compareCoords(line1.coordinates[i], line2.coordinates[i])) {
-        if (!direction) {
+    if (!_compareCoords(line1.coordinates.first, line2.coordinates.first)) {
+      if (reversedGeometries) {
+        return false;
+      } else {
+        var newLine = LineString(
+          coordinates: line2.coordinates.reversed.toList(),
+        );
+        if (!_compareCoords(
+            line1.coordinates.first, newLine.coordinates.first)) {
           return false;
         } else {
-          return _compareLine(
-            line1,
-            LineString(
-              coordinates: line2.coordinates
-                  .map((e) => e.clone())
-                  .toList()
-                  .reversed
-                  .toList(),
-            ),
-          );
+          _compareLine(line1, newLine);
+        }
+      }
+    } else {
+      for (var i = 0; i < line1.coordinates.length; i++) {
+        if (!_compareCoords(line1.coordinates[i], line2.coordinates[i])) {
+          return false;
         }
       }
     }
@@ -137,12 +147,14 @@ class Equality {
   }
 
   bool _compareCoords(Position one, Position two) {
-    return one.alt?.toStringAsFixed(precision) ==
-            two.alt?.toStringAsFixed(precision) &&
-        one.lng.toStringAsFixed(precision) ==
-            two.lng.toStringAsFixed(precision) &&
-        one.lat.toStringAsFixed(precision) ==
-            two.lat.toStringAsFixed(precision);
+    if (precision != 17) {
+      one = Position.of(
+          one.toList().map((e) => rounder.round(e, precision)).toList());
+      two = Position.of(
+          two.toList().map((e) => rounder.round(e, precision)).toList());
+    }
+
+    return one == two;
   }
 
   bool _comparePolygon(Polygon poly1, Polygon poly2) {
@@ -164,45 +176,50 @@ class Equality {
       for (var positionIndex = 0;
           positionIndex < list1[i].length;
           positionIndex++) {
-        if (!shiftedPolygon && !direction) {
-          if (!_compareCoords(
-              list1[i][positionIndex], list2[i][positionIndex])) {
-            return false;
+        if (reversedGeometries) {
+          if (shiftedPolygons) {
+            List<List<Position>> listReversed = poly2
+                .clone()
+                .coordinates
+                .map((e) => e.sublist(0, e.length - 1))
+                .toList()
+                .map((e) => e.reversed.toList())
+                .toList();
+            int diff = listReversed[i].indexOf(list1[i][0]);
+            if (!_compareCoords(
+                list1[i][positionIndex],
+                (listReversed[i][
+                    (listReversed[i].length + positionIndex + diff) %
+                        listReversed[i].length]))) {
+              return false;
+            }
+          } else {
+            List<List<Position>> listReversed = poly2
+                .clone()
+                .coordinates
+                .map((e) => e.sublist(0, e.length - 1))
+                .toList()
+                .map((e) => e.reversed.toList())
+                .toList();
+            if (!_compareCoords(
+                list1[i][positionIndex], listReversed[i][positionIndex])) {
+              return false;
+            }
           }
-        } else if (shiftedPolygon && !direction) {
-          int diff = list2[i].indexOf(list1[i][0]);
-          if (!_compareCoords(
-              list1[i][positionIndex],
-              (list2[i][(list2[i].length + positionIndex + diff) %
-                  list2[i].length]))) {
-            return false;
-          }
-        } else if (direction && !shiftedPolygon) {
-          List<List<Position>> listReversed = poly2
-              .clone()
-              .coordinates
-              .map((e) => e.sublist(0, e.length - 1))
-              .toList()
-              .map((e) => e.reversed.toList())
-              .toList();
-          if (!_compareCoords(
-              list1[i][positionIndex], listReversed[i][positionIndex])) {
-            return false;
-          }
-        } else if (direction && shiftedPolygon) {
-          List<List<Position>> listReversed = poly2
-              .clone()
-              .coordinates
-              .map((e) => e.sublist(0, e.length - 1))
-              .toList()
-              .map((e) => e.reversed.toList())
-              .toList();
-          int diff = listReversed[i].indexOf(list1[i][0]);
-          if (!_compareCoords(
-              list1[i][positionIndex],
-              (listReversed[i][(listReversed[i].length + positionIndex + diff) %
-                  listReversed[i].length]))) {
-            return false;
+        } else {
+          if (shiftedPolygons) {
+            int diff = list2[i].indexOf(list1[i][0]);
+            if (!_compareCoords(
+                list1[i][positionIndex],
+                (list2[i][(list2[i].length + positionIndex + diff) %
+                    list2[i].length]))) {
+              return false;
+            }
+          } else {
+            if (!_compareCoords(
+                list1[i][positionIndex], list2[i][positionIndex])) {
+              return false;
+            }
           }
         }
       }
