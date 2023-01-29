@@ -4,7 +4,7 @@ version: 0.0.2
 repository: https://github.com/dartclub/turf_equality
 
 environment:
-  sdk: ">=2.17.1 <3.0.0"
+  sdk: ">=2.17.0 <3.0.0"
 
 dev_dependencies:
   dartclub_lint: ^0.4.2
