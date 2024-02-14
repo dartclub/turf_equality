@@ -133,7 +133,7 @@ class Equality {
             line1.coordinates.first, newLine.coordinates.first)) {
           return false;
         } else {
-          _compareLine(line1, newLine);
+          return _compareLine(line1, newLine);
         }
       }
     } else {
