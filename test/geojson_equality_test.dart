@@ -73,19 +73,24 @@ void main() {
     });
 
     // ToDo: Another test case where the lines have the same shape but not the
-    // same structure. Equality is questionable.
+    // same structure. Here with reversedGeometries, that behaves exactly the
+    // opposite way as I would expect.
     test('same line, different orientation', () {
-      final result = eq.compare(
-        lineString([
-          [100, -30],
-          [120, -30],
-        ]),
-        lineString([
-          [120, -30],
-          [100, -30],
-        ]),
-      );
-      expect(result, true);
+      final line1 = lineString([
+        [100, -30],
+        [120, -30],
+      ]);
+      final line2 = lineString([
+        [120, -30],
+        [100, -30],
+      ]);
+      final defaultParam = Equality();
+      final reversedTrue = Equality(reversedGeometries: true);
+      final reversedFalse = Equality(reversedGeometries: false);
+
+      expect(defaultParam.compare(line1, line2), true);
+      expect(reversedTrue.compare(line1, line2), false);
+      expect(reversedFalse.compare(line1, line2), true);
     });
 
     test('detect modification on lat, long, start and end point', () {
