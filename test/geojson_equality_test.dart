@@ -72,6 +72,22 @@ void main() {
       expect(result, true);
     });
 
+    // ToDo: Another test case where the lines have the same shape but not the
+    // same structure. Equality is questionable.
+    test('same line, different orientation', () {
+      final result = eq.compare(
+        lineString([
+          [100, -30],
+          [120, -30],
+        ]),
+        lineString([
+          [120, -30],
+          [100, -30],
+        ]),
+      );
+      expect(result, true);
+    });
+
     test('detect modification on lat, long, start and end point', () {
       final original = [
         [100, -30],
