@@ -37,6 +37,101 @@ void main() {
       );
       expect(result, true);
     });
+
+    // ToDo: I would expect this to be false, but it could be argued, that
+    // the line is the same, just the amount of points is different.
+    test('same line, different amount of points (additional middle point)', () {
+      final result = eq.compare(
+        lineString([
+          [100, -30],
+          [120, -30],
+        ]),
+        lineString([
+          [100, -30],
+          [110, -30],
+          [120, -30],
+        ]),
+      );
+      expect(result, false);
+    });
+
+    // ToDo: If the last test case is false, I would expect, that this test
+    // should also be false. Actually it is true.
+    test('same line, different amount of points (end point duplicated)', () {
+      final result = eq.compare(
+        lineString([
+          [100, -30],
+          [120, -30],
+        ]),
+        lineString([
+          [100, -30],
+          [120, -30],
+          [120, -30],
+        ]),
+      );
+      expect(result, true);
+    });
+
+    test('detect modification on lat, long, start and end point', () {
+      final original = [
+        [100, -30],
+        [120, -30],
+      ];
+      for (var point = 0; point < 2; point++) {
+        for (var coordinate = 0; coordinate < 2; coordinate++) {
+          final modified = original.clone();
+          modified[point][coordinate] = 0;
+          final result = eq.compare(lineString(original), lineString(modified));
+          expect(result, false);
+        }
+      }
+    });
+
+    test('detect difference in altitude', () {
+      expect(
+        eq.compare(
+          lineString([
+            [100, -30, 100],
+            [120, -30],
+          ]),
+          lineString([
+            [100, -30],
+            [120, -30],
+          ]),
+        ),
+        false,
+      );
+
+      expect(
+        eq.compare(
+          lineString([
+            [100, -30],
+            [120, -30, 100],
+          ]),
+          lineString([
+            [100, -30],
+            [120, -30, 120],
+          ]),
+        ),
+        false,
+      );
+    });
+
+    test('same line with altitude', () {
+      expect(
+        eq.compare(
+          lineString([
+            [100, -30, 100],
+            [120, -30, 40],
+          ]),
+          lineString([
+            [100, -30, 100],
+            [120, -30, 40],
+          ]),
+        ),
+        false,
+      );
+    });
   });
 
   group(
