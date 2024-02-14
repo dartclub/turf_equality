@@ -5,7 +5,40 @@ import 'package:turf_equality/turf_equality.dart';
 import 'package:test/test.dart';
 import 'package:turf/helpers.dart';
 
+import 'context/helper.dart';
+
 void main() {
+  group('LineString Equality', () {
+    Equality eq = Equality();
+    test('two points, different values', () {
+      final result = eq.compare(
+        lineString([
+          [125, -30],
+          [135, -30],
+        ]),
+        lineString([
+          [115, -35],
+          [125, -30],
+        ]),
+      );
+      expect(result, false);
+    });
+
+    test('two points, same value', () {
+      final result = eq.compare(
+        lineString([
+          [115, -35],
+          [125, -30],
+        ]),
+        lineString([
+          [115, -35],
+          [125, -30],
+        ]),
+      );
+      expect(result, true);
+    });
+  });
+
   group(
     'Turf GeoJSONEquality',
     () {
