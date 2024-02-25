@@ -155,6 +155,81 @@ void main() {
     });
   });
 
+  group('FeatureCollection Equality', () {
+    final eq = Equality();
+    test('collections with different length are not equal', () {
+      expect(
+        eq.compare(
+          FeatureCollection(),
+          FeatureCollection(features: [Feature()]),
+        ),
+        false,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature()]),
+          FeatureCollection(),
+        ),
+        false,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature()]),
+          FeatureCollection(features: [Feature(), Feature()]),
+        ),
+        false,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature(), Feature()]),
+          FeatureCollection(features: [Feature()]),
+        ),
+        false,
+      );
+    });
+
+    test('collections with same length are equal', () {
+      expect(
+        eq.compare(
+          FeatureCollection(),
+          FeatureCollection(),
+        ),
+        true,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature()]),
+          FeatureCollection(features: [Feature()]),
+        ),
+        true,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature(), Feature()]),
+          FeatureCollection(features: [Feature(), Feature()]),
+        ),
+        true,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [
+            Feature(geometry: Point(coordinates: Position(1, 1)))
+          ]),
+          FeatureCollection(features: [
+            Feature(geometry: Point(coordinates: Position(1, 1)))
+          ]),
+        ),
+        true,
+      );
+    });
+  });
+
   group(
     'Turf GeoJSONEquality',
     () {
