@@ -45,8 +45,12 @@ class Equality {
       return compare((g1 as Feature).geometry, (g2 as Feature).geometry) &&
           g1.id == g2.id;
     } else if (_compareTypes<FeatureCollection>(g1, g2)) {
-      for (var i = 0; i < (g1 as FeatureCollection).features.length; i++) {
-        if (!compare(g1.features[i], (g2 as FeatureCollection).features[i])) {
+      if ((g1 as FeatureCollection).features.length !=
+          (g2 as FeatureCollection).features.length) {
+        return false;
+      }
+      for (var i = 0; i < g1.features.length; i++) {
+        if (!compare(g1.features[i], g2.features[i])) {
           return false;
         }
       }
