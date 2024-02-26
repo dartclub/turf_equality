@@ -228,6 +228,36 @@ void main() {
         true,
       );
     });
+
+    test('order does not matter', () {
+      expect(
+        eq.compare(
+          FeatureCollection(features: [
+            Feature(id: '1'),
+            Feature(id: '2'),
+          ]),
+          FeatureCollection(features: [
+            Feature(id: '2'),
+            Feature(id: '1'),
+          ]),
+        ),
+        true,
+      );
+    });
+
+    test('different ids affect equality', () {
+      expect(
+        eq.compare(
+          FeatureCollection(features: [
+            Feature(id: '1'),
+          ]),
+          FeatureCollection(features: [
+            Feature(id: '2'),
+          ]),
+        ),
+        false,
+      );
+    });
   });
 
   group(

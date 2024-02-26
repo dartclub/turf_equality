@@ -49,8 +49,11 @@ class Equality {
           (g2 as FeatureCollection).features.length) {
         return false;
       }
-      for (var i = 0; i < g1.features.length; i++) {
-        if (!compare(g1.features[i], g2.features[i])) {
+      for (final g1Feature in g1.features) {
+        final hasMatch = g2.features.any(
+          (g2Feature) => compare(g1Feature, g2Feature),
+        );
+        if (!hasMatch) {
           return false;
         }
       }
