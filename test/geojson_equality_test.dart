@@ -249,7 +249,7 @@ void main() {
       );
     });
 
-    test('order does not matter', () {
+    test('order does matter', () {
       expect(
         eq.compare(
           FeatureCollection(features: [
@@ -261,7 +261,7 @@ void main() {
             Feature(id: '1'),
           ]),
         ),
-        true,
+        false,
       );
     });
 

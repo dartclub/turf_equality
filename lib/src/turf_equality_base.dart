@@ -1,11 +1,6 @@
 import 'package:turf/turf.dart';
 import 'package:turf/helpers.dart' as rounder;
 
-typedef EqualityObjectComparator = bool Function(
-  GeoJSONObject obj1,
-  GeoJSONObject obj2,
-);
-
 class Equality {
   /// Decides the number of fraction digits in a [double]
   final int precision;
@@ -26,109 +21,84 @@ class Equality {
     this.shiftedPolygons = false,
   });
 
-  bool _compareTypes<T extends GeoJSONObject>(
-      GeoJSONObject? g1, GeoJSONObject? g2) {
-    return g1 is T && g2 is T;
-  }
-
   bool compare(GeoJSONObject? g1, GeoJSONObject? g2) {
-    if (g1 == null && g2 == null) {
-      return true;
-    } else if (_compareTypes<Point>(g1, g2)) {
-      return _compareCoords(
-          (g1 as Point).coordinates, (g2 as Point).coordinates);
-    } else if (_compareTypes<LineString>(g1, g2)) {
-      return _compareLine(g1 as LineString, g2 as LineString);
-    } else if (_compareTypes<Polygon>(g1, g2)) {
-      return _comparePolygon(g1 as Polygon, g2 as Polygon);
-    } else if (_compareTypes<Feature>(g1, g2)) {
-      return compare((g1 as Feature).geometry, (g2 as Feature).geometry) &&
-          g1.id == g2.id;
-    } else if (_compareTypes<FeatureCollection>(g1, g2)) {
-      if ((g1 as FeatureCollection).features.length !=
-          (g2 as FeatureCollection).features.length) {
-        return false;
-      }
-      for (final g1Feature in g1.features) {
-        final hasMatch = g2.features.any(
-          (g2Feature) => compare(g1Feature, g2Feature),
-        );
-        if (!hasMatch) {
-          return false;
-        }
-      }
-      return true;
-    } else if (_compareTypes<GeometryCollection>(g1, g2)) {
-      return compare(
-        FeatureCollection(
-          features: (g1 as GeometryCollection)
-              .geometries
-              .map((e) => Feature(geometry: e))
-              .toList(),
-        ),
-        FeatureCollection(
-          features: (g2 as GeometryCollection)
-              .geometries
-              .map((e) => Feature(geometry: e))
-              .toList(),
-        ),
-      );
-    }
-    //
-    else if (_compareTypes<MultiPoint>(g1, g2)) {
-      return compare(
-        FeatureCollection(
-          features: (g1 as MultiPoint)
-              .coordinates
-              .map((e) => Feature(geometry: Point(coordinates: e)))
-              .toList(),
-        ),
-        FeatureCollection(
-            features: (g2 as MultiPoint)
-                .coordinates
-                .map((e) => Feature(geometry: Point(coordinates: e)))
-                .toList()),
-      );
-    }
-    //
-    else if (_compareTypes<MultiLineString>(g1, g2)) {
-      if ((g1 as MultiLineString).coordinates.length !=
-          (g2 as MultiLineString).coordinates.length) {
-        return false;
-      }
-      for (var line = 0; line < g1.coordinates.length; line++) {
-        if (!compare(LineString(coordinates: g1.coordinates[line]),
-            LineString(coordinates: g2.coordinates[line]))) {
-          return false;
-        }
-      }
-      return true;
-    }
-    //
-    else if (_compareTypes<MultiPolygon>(g1, g2)) {
-      return compare(
-        FeatureCollection(
-          features: (g1 as MultiPolygon)
-              .coordinates
-              .map((e) => Feature(geometry: Polygon(coordinates: e)))
-              .toList(),
-        ),
-        FeatureCollection(
-            features: (g2 as MultiPolygon)
-                .coordinates
-                .map(
-                  (e) => Feature(geometry: Polygon(coordinates: e)),
-                )
-                .toList()),
-      );
-    }
-    //
-    else {
+    if (g1 == null || g2 == null) {
+      return g1 == g2;
+    } else if (g1 is Point && g2 is Point) {
+      return _comparePoint(g1, g2);
+    } else if (g1 is LineString && g2 is LineString) {
+      return _compareLineString(g1, g2);
+    } else if (g1 is Polygon && g2 is Polygon) {
+      return _comparePolygon(g1, g2);
+    } else if (g1 is Feature && g2 is Feature) {
+      return _compareFeature(g1, g2);
+    } else if (g1 is FeatureCollection && g2 is FeatureCollection) {
+      return _compareFeatureCollection(g1, g2);
+    } else if (g1 is GeometryCollection && g2 is GeometryCollection) {
+      return _compareGeometryCollection(g1, g2);
+    } else if (g1 is MultiPoint && g2 is MultiPoint) {
+      return _compareMultiPoint(g1, g2);
+    } else if (g1 is MultiLineString && g2 is MultiLineString) {
+      return _compareMultiLineString(g1, g2);
+    } else if (g1 is MultiPolygon && g2 is MultiPolygon) {
+      return _compareMultiPolygon(g1, g2);
+    } else {
       return false;
     }
   }
 
-  bool _compareLine(LineString line1, LineString line2) {
+  bool _compareFeatureCollection(
+    FeatureCollection first,
+    FeatureCollection second,
+  ) {
+    if (first.features.length != second.features.length) {
+      return false;
+    }
+    for (var i = 0; i < first.features.length; i++) {
+      if (!compare(first.features[i], second.features[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _compareGeometryCollection(
+    GeometryCollection first,
+    GeometryCollection second,
+  ) {
+    if (first.geometries.length != second.geometries.length) {
+      return false;
+    }
+    for (var i = 0; i < first.geometries.length; i++) {
+      if (!compare(first.geometries[i], second.geometries[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _compareFeature(Feature feature1, Feature feature2) {
+    return feature1.id == feature2.id &&
+        compare(feature1.geometry, feature2.geometry);
+  }
+
+  bool _comparePoint(Point point1, Point point2) {
+    return _compareCoords(point1.coordinates, point2.coordinates);
+  }
+
+  bool _compareMultiPoint(MultiPoint first, MultiPoint second) {
+    if (first.coordinates.length != second.coordinates.length) {
+      return false;
+    }
+    for (var i = 0; i < first.coordinates.length; i++) {
+      if (!_compareCoords(first.coordinates[i], second.coordinates[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _compareLineString(LineString line1, LineString line2) {
     if (!_compareCoords(line1.coordinates.first, line2.coordinates.first)) {
       if (!reversedGeometries) {
         return false;
@@ -140,7 +110,7 @@ class Equality {
             line1.coordinates.first, newLine.coordinates.first)) {
           return false;
         } else {
-          return _compareLine(line1, newLine);
+          return _compareLineString(line1, newLine);
         }
       }
     } else {
@@ -153,15 +123,20 @@ class Equality {
     return true;
   }
 
-  bool _compareCoords(Position one, Position two) {
-    if (precision != 17) {
-      one = Position.of(
-          one.toList().map((e) => rounder.round(e, precision)).toList());
-      two = Position.of(
-          two.toList().map((e) => rounder.round(e, precision)).toList());
+  bool _compareMultiLineString(MultiLineString first, MultiLineString second) {
+    if (first.coordinates.length != second.coordinates.length) {
+      return false;
     }
 
-    return one == two;
+    for (var i = 0; i < first.coordinates.length; i++) {
+      final firstLineString = LineString(coordinates: first.coordinates[i]);
+      final secondLineString = LineString(coordinates: second.coordinates[i]);
+      if (!compare(firstLineString, secondLineString)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   bool _comparePolygon(Polygon polygon1, Polygon polygon2) {
@@ -182,14 +157,19 @@ class Equality {
     }
 
     List<List<Position>> deconstruct(Polygon polygon) {
-      // ToDo: last and first position of polygons are the same. Do we really
-      // want to remove the last position? We didn't detect any difference
-      // of the last position here.
       return polygon
           .clone()
           .coordinates
           .map((e) => e.sublist(0, e.length - 1))
           .toList();
+    }
+
+    // deconstruct() removes the last position of the polygon to make
+    // it easier to reverse and shift the polygon. First and last positions
+    // must be the same, so it shouldn't matter, but to make sure, we check
+    // the last position before removing it.
+    if (polygon1.coordinates.last != polygon2.coordinates.last) {
+      return false;
     }
 
     List<List<Position>> linearRings1 = deconstruct(polygon1);
@@ -237,5 +217,30 @@ class Equality {
       }
     }
     return true;
+  }
+
+  bool _compareMultiPolygon(MultiPolygon first, MultiPolygon second) {
+    if (first.coordinates.length != second.coordinates.length) {
+      return false;
+    }
+
+    for (var i = 0; i < first.coordinates.length; i++) {
+      final firstPolygon = Polygon(coordinates: first.coordinates[i]);
+      final secondPolygon = Polygon(coordinates: second.coordinates[i]);
+      if (!compare(firstPolygon, secondPolygon)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _compareCoords(Position one, Position two) {
+    if (precision != 17) {
+      one = Position.of(
+          one.toList().map((e) => rounder.round(e, precision)).toList());
+      two = Position.of(
+          two.toList().map((e) => rounder.round(e, precision)).toList());
+    }
+    return one == two;
   }
 }
