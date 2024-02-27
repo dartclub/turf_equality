@@ -16,7 +16,6 @@ class Equality {
 
   /// If true, consider two [Polygon]s with shifted [Position]s as the same.
   final bool shiftedPolygons;
-  // final EqualityObjectComparator objectComparator;
 
   final int Function(GeoJSONObject obj1, GeoJSONObject obj2)? objectComparator;
 
@@ -25,8 +24,6 @@ class Equality {
     this.precision = 17,
     this.reversedGeometries = false,
     this.shiftedPolygons = false,
-
-    //  this.objectComparator = _deepEqual,
   });
 
   bool _compareTypes<T extends GeoJSONObject>(
