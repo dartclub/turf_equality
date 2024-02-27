@@ -18,7 +18,10 @@ class Equality {
   final bool shiftedPolygons;
   // final EqualityObjectComparator objectComparator;
 
+  final int Function(GeoJSONObject obj1, GeoJSONObject obj2)? objectComparator;
+
   Equality({
+    this.objectComparator,
     this.precision = 17,
     this.reversedGeometries = false,
     this.shiftedPolygons = false,
@@ -130,7 +133,7 @@ class Equality {
 
   bool _compareLine(LineString line1, LineString line2) {
     if (!_compareCoords(line1.coordinates.first, line2.coordinates.first)) {
-      if (reversedGeometries) {
+      if (!reversedGeometries) {
         return false;
       } else {
         var newLine = LineString(
@@ -164,67 +167,72 @@ class Equality {
     return one == two;
   }
 
-  bool _comparePolygon(Polygon poly1, Polygon poly2) {
-    List<List<Position>> list1 = poly1
-        .clone()
-        .coordinates
-        .map((e) => e.sublist(0, e.length - 1))
-        .toList();
-    List<List<Position>> list2 = poly2
-        .clone()
-        .coordinates
-        .map((e) => e.sublist(0, e.length - 1))
-        .toList();
+  bool _comparePolygon(Polygon polygon1, Polygon polygon2) {
+    List<List<Position>> reverse(Polygon polygon) {
+      return polygon
+          .clone()
+          .coordinates
+          .map((e) => e.sublist(0, e.length - 1))
+          .toList()
+          .map((e) => e.reversed.toList())
+          .toList();
+    }
 
-    for (var i = 0; i < list1.length; i++) {
-      if (list1[i].length != list2[i].length) {
-        return false;
-      }
-      for (var positionIndex = 0;
-          positionIndex < list1[i].length;
-          positionIndex++) {
-        if (reversedGeometries) {
-          if (shiftedPolygons) {
-            List<List<Position>> listReversed = poly2
-                .clone()
-                .coordinates
-                .map((e) => e.sublist(0, e.length - 1))
-                .toList()
-                .map((e) => e.reversed.toList())
-                .toList();
-            int diff = listReversed[i].indexOf(list1[i][0]);
-            if (!_compareCoords(
-                list1[i][positionIndex],
-                (listReversed[i][
-                    (listReversed[i].length + positionIndex + diff) %
-                        listReversed[i].length]))) {
-              return false;
-            }
-          } else {
-            List<List<Position>> listReversed = poly2
-                .clone()
-                .coordinates
-                .map((e) => e.sublist(0, e.length - 1))
-                .toList()
-                .map((e) => e.reversed.toList())
-                .toList();
-            if (!_compareCoords(
-                list1[i][positionIndex], listReversed[i][positionIndex])) {
+    Position shift(Position first, List<Position> coords, int index) {
+      int diff = coords.indexOf(first);
+      final iShifted = (coords.length + index + diff) % coords.length;
+      return coords[iShifted];
+    }
+
+    List<List<Position>> deconstruct(Polygon polygon) {
+      // ToDo: last and first position of polygons are the same. Do we really
+      // want to remove the last position? We didn't detect any difference
+      // of the last position here.
+      return polygon
+          .clone()
+          .coordinates
+          .map((e) => e.sublist(0, e.length - 1))
+          .toList();
+    }
+
+    List<List<Position>> linearRings1 = deconstruct(polygon1);
+    List<List<Position>> linearRings2 = deconstruct(polygon2);
+
+    if (linearRings1.length != linearRings2.length) return false;
+
+    for (var iRing = 0; iRing < linearRings1.length; iRing++) {
+      final coords1 = linearRings1[iRing];
+      final coords2 = linearRings2[iRing];
+
+      if (coords1.length != coords2.length) return false;
+
+      for (var iPosition = 0; iPosition < coords1.length; iPosition++) {
+        final position1 = coords1[iPosition];
+        final position2 = coords2[iPosition];
+
+        if (!_compareCoords(position1, position2)) {
+          if (!reversedGeometries && !shiftedPolygons) {
+            return false;
+          }
+
+          if (!reversedGeometries && shiftedPolygons) {
+            final shifted = shift(coords1.first, coords2, iPosition);
+            if (!_compareCoords(position1, shifted)) {
               return false;
             }
           }
-        } else {
-          if (shiftedPolygons) {
-            int diff = list2[i].indexOf(list1[i][0]);
-            if (!_compareCoords(
-                list1[i][positionIndex],
-                (list2[i][(list2[i].length + positionIndex + diff) %
-                    list2[i].length]))) {
+
+          if (reversedGeometries && shiftedPolygons) {
+            final reversed = reverse(polygon2)[iRing];
+            final shifted = shift(coords1.first, reversed, iPosition);
+            if (!_compareCoords(position1, shifted)) {
               return false;
             }
-          } else {
-            if (!_compareCoords(
-                list1[i][positionIndex], list2[i][positionIndex])) {
+          }
+
+          if (reversedGeometries && !shiftedPolygons) {
+            final reversed = reverse(polygon2)[iRing][iPosition];
+            if (!_compareCoords(position1, reversed)) {
               return false;
             }
           }

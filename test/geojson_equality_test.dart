@@ -84,13 +84,33 @@ void main() {
         [120, -30],
         [100, -30],
       ]);
-      final defaultParam = Equality();
-      final reversedTrue = Equality(reversedGeometries: true);
-      final reversedFalse = Equality(reversedGeometries: false);
+      final line3 = lineString([
+        [0, 0],
+        [0, 5],
+        [5, 5],
+        [5, 0]
+      ]);
+      final line4 = lineString([
+        [5, 0],
+        [5, 5],
+        [0, 5],
+        [0, 0]
+      ]);
 
-      expect(defaultParam.compare(line1, line2), true);
-      expect(reversedTrue.compare(line1, line2), false);
-      expect(reversedFalse.compare(line1, line2), true);
+      final defaultParam = Equality();
+      expect(defaultParam.compare(line1, line1), true);
+      expect(defaultParam.compare(line1, line2), false);
+      expect(defaultParam.compare(line3, line4), false);
+
+      final reversedFalse = Equality(reversedGeometries: false);
+      expect(reversedFalse.compare(line1, line1), true);
+      expect(reversedFalse.compare(line1, line2), false);
+      expect(reversedFalse.compare(line3, line4), false);
+
+      final reversedTrue = Equality(reversedGeometries: true);
+      expect(reversedTrue.compare(line1, line1), true);
+      expect(reversedTrue.compare(line1, line2), true);
+      expect(reversedTrue.compare(line3, line4), true);
     });
 
     test('detect modification on lat, long, start and end point', () {
@@ -260,6 +280,8 @@ void main() {
     });
   });
 
+  group('LineString Equality', () {});
+
   group(
     'Turf GeoJSONEquality',
     () {
@@ -328,7 +350,7 @@ void main() {
           test(
             'precision ${inFile.uri.pathSegments.last}',
             () {
-              Equality eq = Equality(precision: 5);
+              Equality eq = Equality(precision: 5, reversedGeometries: true);
               var outDir = Directory('./test/examples/out');
               for (var outFile in outDir.listSync(recursive: true)) {
                 if (outFile is File && outFile.path.endsWith('.geojson')) {
@@ -336,7 +358,8 @@ void main() {
                       inFile.uri.pathSegments.last) {
                     GeoJSONObject outGeom = GeoJSONObject.fromJson(
                         jsonDecode(outFile.readAsStringSync()));
-                    expect(eq.compare(inGeom, outGeom), true);
+                    expect(eq.compare(inGeom, outGeom), true,
+                        reason: inFile.uri.pathSegments.last);
                   }
                 }
               }
