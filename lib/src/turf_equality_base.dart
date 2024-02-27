@@ -164,14 +164,6 @@ class Equality {
           .toList();
     }
 
-    // deconstruct() removes the last position of the polygon to make
-    // it easier to reverse and shift the polygon. First and last positions
-    // must be the same, so it shouldn't matter, but to make sure, we check
-    // the last position before removing it.
-    if (polygon1.coordinates.last != polygon2.coordinates.last) {
-      return false;
-    }
-
     List<List<Position>> linearRings1 = deconstruct(polygon1);
     List<List<Position>> linearRings2 = deconstruct(polygon2);
 
