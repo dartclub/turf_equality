@@ -1,6 +1,6 @@
 // A List of builders that are similar to the way TurfJs creates GeoJSON
 // objects. The idea is to make it easier to port JavaScript tests to Dart.
-import 'package:turf/turf.dart';
+import 'package:geotypes/geotypes.dart';
 
 Feature<LineString> lineString(List<List<num>> coordinates, {dynamic id}) {
   return Feature(
