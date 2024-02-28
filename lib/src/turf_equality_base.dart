@@ -99,6 +99,8 @@ class Equality {
   }
 
   bool _compareLineString(LineString line1, LineString line2) {
+    if (line1.coordinates.length != line2.coordinates.length) return false;
+
     if (!_compareCoords(line1.coordinates.first, line2.coordinates.first)) {
       if (!reversedGeometries) {
         return false;

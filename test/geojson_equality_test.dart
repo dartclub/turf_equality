@@ -38,8 +38,6 @@ void main() {
       expect(result, true);
     });
 
-    // ToDo: I would expect this to be false, but it could be argued, that
-    // the line is the same, just the amount of points is different.
     test('same line, different amount of points (additional middle point)', () {
       final result = eq.compare(
         lineString([
@@ -55,8 +53,8 @@ void main() {
       expect(result, false);
     });
 
-    // ToDo: If the last test case is false, I would expect, that this test
-    // should also be false. Actually it is true.
+    // ToDo: This should be resolved as part of data normalization and not
+    // handled during equality checks.
     test('same line, different amount of points (end point duplicated)', () {
       final result = eq.compare(
         lineString([
@@ -69,12 +67,9 @@ void main() {
           [120, -30],
         ]),
       );
-      expect(result, true);
+      expect(result, false);
     });
 
-    // ToDo: Another test case where the lines have the same shape but not the
-    // same structure. Here with reversedGeometries, that behaves exactly the
-    // opposite way as I would expect.
     test('same line, different orientation', () {
       final line1 = lineString([
         [100, -30],
