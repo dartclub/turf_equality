@@ -1,6 +1,6 @@
 name: turf_equality
 description: Comparison of two GeoJSON objects, based on the turf pub-package
-version: 0.0.3
+version: 0.1.0
 repository: https://github.com/dartclub/turf_equality
 
 environment:
