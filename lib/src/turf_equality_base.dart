@@ -1,11 +1,6 @@
 import 'package:turf/turf.dart';
 import 'package:turf/helpers.dart' as rounder;
 
-typedef EqualityObjectComparator = bool Function(
-  GeoJSONObject obj1,
-  GeoJSONObject obj2,
-);
-
 class Equality {
   /// Decides the number of fraction digits in a [double]
   final int precision;
@@ -16,114 +11,98 @@ class Equality {
 
   /// If true, consider two [Polygon]s with shifted [Position]s as the same.
   final bool shiftedPolygons;
-  // final EqualityObjectComparator objectComparator;
+
+  final int Function(GeoJSONObject obj1, GeoJSONObject obj2)? objectComparator;
 
   Equality({
+    this.objectComparator,
     this.precision = 17,
     this.reversedGeometries = false,
     this.shiftedPolygons = false,
-
-    //  this.objectComparator = _deepEqual,
   });
 
-  bool _compareTypes<T extends GeoJSONObject>(
-      GeoJSONObject? g1, GeoJSONObject? g2) {
-    return g1 is T && g2 is T;
-  }
-
   bool compare(GeoJSONObject? g1, GeoJSONObject? g2) {
-    if (g1 == null && g2 == null) {
-      return true;
-    } else if (_compareTypes<Point>(g1, g2)) {
-      return _compareCoords(
-          (g1 as Point).coordinates, (g2 as Point).coordinates);
-    } else if (_compareTypes<LineString>(g1, g2)) {
-      return _compareLine(g1 as LineString, g2 as LineString);
-    } else if (_compareTypes<Polygon>(g1, g2)) {
-      return _comparePolygon(g1 as Polygon, g2 as Polygon);
-    } else if (_compareTypes<Feature>(g1, g2)) {
-      return compare((g1 as Feature).geometry, (g2 as Feature).geometry) &&
-          g1.id == g2.id;
-    } else if (_compareTypes<FeatureCollection>(g1, g2)) {
-      for (var i = 0; i < (g1 as FeatureCollection).features.length; i++) {
-        if (!compare(g1.features[i], (g2 as FeatureCollection).features[i])) {
-          return false;
-        }
-      }
-      return true;
-    } else if (_compareTypes<GeometryCollection>(g1, g2)) {
-      return compare(
-        FeatureCollection(
-          features: (g1 as GeometryCollection)
-              .geometries
-              .map((e) => Feature(geometry: e))
-              .toList(),
-        ),
-        FeatureCollection(
-          features: (g2 as GeometryCollection)
-              .geometries
-              .map((e) => Feature(geometry: e))
-              .toList(),
-        ),
-      );
-    }
-    //
-    else if (_compareTypes<MultiPoint>(g1, g2)) {
-      return compare(
-        FeatureCollection(
-          features: (g1 as MultiPoint)
-              .coordinates
-              .map((e) => Feature(geometry: Point(coordinates: e)))
-              .toList(),
-        ),
-        FeatureCollection(
-            features: (g2 as MultiPoint)
-                .coordinates
-                .map((e) => Feature(geometry: Point(coordinates: e)))
-                .toList()),
-      );
-    }
-    //
-    else if (_compareTypes<MultiLineString>(g1, g2)) {
-      if ((g1 as MultiLineString).coordinates.length !=
-          (g2 as MultiLineString).coordinates.length) {
-        return false;
-      }
-      for (var line = 0; line < g1.coordinates.length; line++) {
-        if (!compare(LineString(coordinates: g1.coordinates[line]),
-            LineString(coordinates: g2.coordinates[line]))) {
-          return false;
-        }
-      }
-      return true;
-    }
-    //
-    else if (_compareTypes<MultiPolygon>(g1, g2)) {
-      return compare(
-        FeatureCollection(
-          features: (g1 as MultiPolygon)
-              .coordinates
-              .map((e) => Feature(geometry: Polygon(coordinates: e)))
-              .toList(),
-        ),
-        FeatureCollection(
-            features: (g2 as MultiPolygon)
-                .coordinates
-                .map(
-                  (e) => Feature(geometry: Polygon(coordinates: e)),
-                )
-                .toList()),
-      );
-    }
-    //
-    else {
+    if (g1 == null || g2 == null) {
+      return g1 == g2;
+    } else if (g1 is Point && g2 is Point) {
+      return _comparePoint(g1, g2);
+    } else if (g1 is LineString && g2 is LineString) {
+      return _compareLineString(g1, g2);
+    } else if (g1 is Polygon && g2 is Polygon) {
+      return _comparePolygon(g1, g2);
+    } else if (g1 is Feature && g2 is Feature) {
+      return _compareFeature(g1, g2);
+    } else if (g1 is FeatureCollection && g2 is FeatureCollection) {
+      return _compareFeatureCollection(g1, g2);
+    } else if (g1 is GeometryCollection && g2 is GeometryCollection) {
+      return _compareGeometryCollection(g1, g2);
+    } else if (g1 is MultiPoint && g2 is MultiPoint) {
+      return _compareMultiPoint(g1, g2);
+    } else if (g1 is MultiLineString && g2 is MultiLineString) {
+      return _compareMultiLineString(g1, g2);
+    } else if (g1 is MultiPolygon && g2 is MultiPolygon) {
+      return _compareMultiPolygon(g1, g2);
+    } else {
       return false;
     }
   }
 
-  bool _compareLine(LineString line1, LineString line2) {
+  bool _compareFeatureCollection(
+    FeatureCollection first,
+    FeatureCollection second,
+  ) {
+    if (first.features.length != second.features.length) {
+      return false;
+    }
+    for (var i = 0; i < first.features.length; i++) {
+      if (!compare(first.features[i], second.features[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _compareGeometryCollection(
+    GeometryCollection first,
+    GeometryCollection second,
+  ) {
+    if (first.geometries.length != second.geometries.length) {
+      return false;
+    }
+    for (var i = 0; i < first.geometries.length; i++) {
+      if (!compare(first.geometries[i], second.geometries[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _compareFeature(Feature feature1, Feature feature2) {
+    return feature1.id == feature2.id &&
+        compare(feature1.geometry, feature2.geometry);
+  }
+
+  bool _comparePoint(Point point1, Point point2) {
+    return _compareCoords(point1.coordinates, point2.coordinates);
+  }
+
+  bool _compareMultiPoint(MultiPoint first, MultiPoint second) {
+    if (first.coordinates.length != second.coordinates.length) {
+      return false;
+    }
+    for (var i = 0; i < first.coordinates.length; i++) {
+      if (!_compareCoords(first.coordinates[i], second.coordinates[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _compareLineString(LineString line1, LineString line2) {
+    if (line1.coordinates.length != line2.coordinates.length) return false;
+
     if (!_compareCoords(line1.coordinates.first, line2.coordinates.first)) {
-      if (reversedGeometries) {
+      if (!reversedGeometries) {
         return false;
       } else {
         var newLine = LineString(
@@ -133,7 +112,7 @@ class Equality {
             line1.coordinates.first, newLine.coordinates.first)) {
           return false;
         } else {
-          return _compareLine(line1, newLine);
+          return _compareLineString(line1, newLine);
         }
       }
     } else {
@@ -146,78 +125,85 @@ class Equality {
     return true;
   }
 
-  bool _compareCoords(Position one, Position two) {
-    if (precision != 17) {
-      one = Position.of(
-          one.toList().map((e) => rounder.round(e, precision)).toList());
-      two = Position.of(
-          two.toList().map((e) => rounder.round(e, precision)).toList());
+  bool _compareMultiLineString(MultiLineString first, MultiLineString second) {
+    if (first.coordinates.length != second.coordinates.length) {
+      return false;
     }
 
-    return one == two;
-  }
-
-  bool _comparePolygon(Polygon poly1, Polygon poly2) {
-    List<List<Position>> list1 = poly1
-        .clone()
-        .coordinates
-        .map((e) => e.sublist(0, e.length - 1))
-        .toList();
-    List<List<Position>> list2 = poly2
-        .clone()
-        .coordinates
-        .map((e) => e.sublist(0, e.length - 1))
-        .toList();
-
-    for (var i = 0; i < list1.length; i++) {
-      if (list1[i].length != list2[i].length) {
+    for (var i = 0; i < first.coordinates.length; i++) {
+      final firstLineString = LineString(coordinates: first.coordinates[i]);
+      final secondLineString = LineString(coordinates: second.coordinates[i]);
+      if (!compare(firstLineString, secondLineString)) {
         return false;
       }
-      for (var positionIndex = 0;
-          positionIndex < list1[i].length;
-          positionIndex++) {
-        if (reversedGeometries) {
-          if (shiftedPolygons) {
-            List<List<Position>> listReversed = poly2
-                .clone()
-                .coordinates
-                .map((e) => e.sublist(0, e.length - 1))
-                .toList()
-                .map((e) => e.reversed.toList())
-                .toList();
-            int diff = listReversed[i].indexOf(list1[i][0]);
-            if (!_compareCoords(
-                list1[i][positionIndex],
-                (listReversed[i][
-                    (listReversed[i].length + positionIndex + diff) %
-                        listReversed[i].length]))) {
-              return false;
-            }
-          } else {
-            List<List<Position>> listReversed = poly2
-                .clone()
-                .coordinates
-                .map((e) => e.sublist(0, e.length - 1))
-                .toList()
-                .map((e) => e.reversed.toList())
-                .toList();
-            if (!_compareCoords(
-                list1[i][positionIndex], listReversed[i][positionIndex])) {
+    }
+
+    return true;
+  }
+
+  bool _comparePolygon(Polygon polygon1, Polygon polygon2) {
+    List<List<Position>> reverse(Polygon polygon) {
+      return polygon
+          .clone()
+          .coordinates
+          .map((e) => e.sublist(0, e.length - 1))
+          .toList()
+          .map((e) => e.reversed.toList())
+          .toList();
+    }
+
+    Position shift(Position first, List<Position> coords, int index) {
+      int diff = coords.indexOf(first);
+      final iShifted = (coords.length + index + diff) % coords.length;
+      return coords[iShifted];
+    }
+
+    List<List<Position>> deconstruct(Polygon polygon) {
+      return polygon
+          .clone()
+          .coordinates
+          .map((e) => e.sublist(0, e.length - 1))
+          .toList();
+    }
+
+    List<List<Position>> linearRings1 = deconstruct(polygon1);
+    List<List<Position>> linearRings2 = deconstruct(polygon2);
+
+    if (linearRings1.length != linearRings2.length) return false;
+
+    for (var iRing = 0; iRing < linearRings1.length; iRing++) {
+      final coords1 = linearRings1[iRing];
+      final coords2 = linearRings2[iRing];
+
+      if (coords1.length != coords2.length) return false;
+
+      for (var iPosition = 0; iPosition < coords1.length; iPosition++) {
+        final position1 = coords1[iPosition];
+        final position2 = coords2[iPosition];
+
+        if (!_compareCoords(position1, position2)) {
+          if (!reversedGeometries && !shiftedPolygons) {
+            return false;
+          }
+
+          if (!reversedGeometries && shiftedPolygons) {
+            final shifted = shift(coords1.first, coords2, iPosition);
+            if (!_compareCoords(position1, shifted)) {
               return false;
             }
           }
-        } else {
-          if (shiftedPolygons) {
-            int diff = list2[i].indexOf(list1[i][0]);
-            if (!_compareCoords(
-                list1[i][positionIndex],
-                (list2[i][(list2[i].length + positionIndex + diff) %
-                    list2[i].length]))) {
+
+          if (reversedGeometries && shiftedPolygons) {
+            final reversed = reverse(polygon2)[iRing];
+            final shifted = shift(coords1.first, reversed, iPosition);
+            if (!_compareCoords(position1, shifted)) {
               return false;
             }
-          } else {
-            if (!_compareCoords(
-                list1[i][positionIndex], list2[i][positionIndex])) {
+          }
+
+          if (reversedGeometries && !shiftedPolygons) {
+            final reversed = reverse(polygon2)[iRing][iPosition];
+            if (!_compareCoords(position1, reversed)) {
               return false;
             }
           }
@@ -225,5 +211,30 @@ class Equality {
       }
     }
     return true;
+  }
+
+  bool _compareMultiPolygon(MultiPolygon first, MultiPolygon second) {
+    if (first.coordinates.length != second.coordinates.length) {
+      return false;
+    }
+
+    for (var i = 0; i < first.coordinates.length; i++) {
+      final firstPolygon = Polygon(coordinates: first.coordinates[i]);
+      final secondPolygon = Polygon(coordinates: second.coordinates[i]);
+      if (!compare(firstPolygon, secondPolygon)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _compareCoords(Position one, Position two) {
+    if (precision != 17) {
+      one = Position.of(
+          one.toList().map((e) => rounder.round(e, precision)).toList());
+      two = Position.of(
+          two.toList().map((e) => rounder.round(e, precision)).toList());
+    }
+    return one == two;
   }
 }

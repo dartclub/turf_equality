@@ -37,7 +37,245 @@ void main() {
       );
       expect(result, true);
     });
+
+    test('same line, different amount of points (additional middle point)', () {
+      final result = eq.compare(
+        lineString([
+          [100, -30],
+          [120, -30],
+        ]),
+        lineString([
+          [100, -30],
+          [110, -30],
+          [120, -30],
+        ]),
+      );
+      expect(result, false);
+    });
+
+    // ToDo: This should be resolved as part of data normalization and not
+    // handled during equality checks.
+    test('same line, different amount of points (end point duplicated)', () {
+      final result = eq.compare(
+        lineString([
+          [100, -30],
+          [120, -30],
+        ]),
+        lineString([
+          [100, -30],
+          [120, -30],
+          [120, -30],
+        ]),
+      );
+      expect(result, false);
+    });
+
+    test('same line, different orientation', () {
+      final line1 = lineString([
+        [100, -30],
+        [120, -30],
+      ]);
+      final line2 = lineString([
+        [120, -30],
+        [100, -30],
+      ]);
+      final line3 = lineString([
+        [0, 0],
+        [0, 5],
+        [5, 5],
+        [5, 0]
+      ]);
+      final line4 = lineString([
+        [5, 0],
+        [5, 5],
+        [0, 5],
+        [0, 0]
+      ]);
+
+      final defaultParam = Equality();
+      expect(defaultParam.compare(line1, line1), true);
+      expect(defaultParam.compare(line1, line2), false);
+      expect(defaultParam.compare(line3, line4), false);
+
+      final reversedFalse = Equality(reversedGeometries: false);
+      expect(reversedFalse.compare(line1, line1), true);
+      expect(reversedFalse.compare(line1, line2), false);
+      expect(reversedFalse.compare(line3, line4), false);
+
+      final reversedTrue = Equality(reversedGeometries: true);
+      expect(reversedTrue.compare(line1, line1), true);
+      expect(reversedTrue.compare(line1, line2), true);
+      expect(reversedTrue.compare(line3, line4), true);
+    });
+
+    test('detect modification on lat, long, start and end point', () {
+      final original = [
+        [100, -30],
+        [120, -30],
+      ];
+      for (var point = 0; point < 2; point++) {
+        for (var coordinate = 0; coordinate < 2; coordinate++) {
+          final modified = original.clone();
+          modified[point][coordinate] = 0;
+          final result = eq.compare(lineString(original), lineString(modified));
+          expect(result, false);
+        }
+      }
+    });
+
+    test('detect difference in altitude', () {
+      expect(
+        eq.compare(
+          lineString([
+            [100, -30, 100],
+            [120, -30],
+          ]),
+          lineString([
+            [100, -30],
+            [120, -30],
+          ]),
+        ),
+        false,
+      );
+
+      expect(
+        eq.compare(
+          lineString([
+            [100, -30],
+            [120, -30, 100],
+          ]),
+          lineString([
+            [100, -30],
+            [120, -30, 120],
+          ]),
+        ),
+        false,
+      );
+    });
+
+    test('same line with altitude', () {
+      expect(
+        eq.compare(
+          lineString([
+            [100, -30, 100],
+            [120, -30, 40],
+          ]),
+          lineString([
+            [100, -30, 100],
+            [120, -30, 40],
+          ]),
+        ),
+        true,
+      );
+    });
   });
+
+  group('FeatureCollection Equality', () {
+    final eq = Equality();
+    test('collections with different length are not equal', () {
+      expect(
+        eq.compare(
+          FeatureCollection(),
+          FeatureCollection(features: [Feature()]),
+        ),
+        false,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature()]),
+          FeatureCollection(),
+        ),
+        false,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature()]),
+          FeatureCollection(features: [Feature(), Feature()]),
+        ),
+        false,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature(), Feature()]),
+          FeatureCollection(features: [Feature()]),
+        ),
+        false,
+      );
+    });
+
+    test('collections with same length are equal', () {
+      expect(
+        eq.compare(
+          FeatureCollection(),
+          FeatureCollection(),
+        ),
+        true,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature()]),
+          FeatureCollection(features: [Feature()]),
+        ),
+        true,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [Feature(), Feature()]),
+          FeatureCollection(features: [Feature(), Feature()]),
+        ),
+        true,
+      );
+
+      expect(
+        eq.compare(
+          FeatureCollection(features: [
+            Feature(geometry: Point(coordinates: Position(1, 1)))
+          ]),
+          FeatureCollection(features: [
+            Feature(geometry: Point(coordinates: Position(1, 1)))
+          ]),
+        ),
+        true,
+      );
+    });
+
+    test('order does matter', () {
+      expect(
+        eq.compare(
+          FeatureCollection(features: [
+            Feature(id: '1'),
+            Feature(id: '2'),
+          ]),
+          FeatureCollection(features: [
+            Feature(id: '2'),
+            Feature(id: '1'),
+          ]),
+        ),
+        false,
+      );
+    });
+
+    test('different ids affect equality', () {
+      expect(
+        eq.compare(
+          FeatureCollection(features: [
+            Feature(id: '1'),
+          ]),
+          FeatureCollection(features: [
+            Feature(id: '2'),
+          ]),
+        ),
+        false,
+      );
+    });
+  });
+
+  group('LineString Equality', () {});
 
   group(
     'Turf GeoJSONEquality',
@@ -107,7 +345,7 @@ void main() {
           test(
             'precision ${inFile.uri.pathSegments.last}',
             () {
-              Equality eq = Equality(precision: 5);
+              Equality eq = Equality(precision: 5, reversedGeometries: true);
               var outDir = Directory('./test/examples/out');
               for (var outFile in outDir.listSync(recursive: true)) {
                 if (outFile is File && outFile.path.endsWith('.geojson')) {
@@ -115,7 +353,8 @@ void main() {
                       inFile.uri.pathSegments.last) {
                     GeoJSONObject outGeom = GeoJSONObject.fromJson(
                         jsonDecode(outFile.readAsStringSync()));
-                    expect(eq.compare(inGeom, outGeom), true);
+                    expect(eq.compare(inGeom, outGeom), true,
+                        reason: inFile.uri.pathSegments.last);
                   }
                 }
               }
