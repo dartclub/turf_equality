@@ -1,5 +1,5 @@
-import 'package:turf/turf.dart';
-import 'package:turf/helpers.dart' as rounder;
+import 'package:geotypes/geotypes.dart';
+import 'round.dart' as rounder;
 
 class Equality {
   /// Decides the number of fraction digits in a [double]

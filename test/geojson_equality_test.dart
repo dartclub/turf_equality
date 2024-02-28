@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:turf_equality/turf_equality.dart';
 import 'package:test/test.dart';
-import 'package:turf/helpers.dart';
+import 'package:geotypes/geotypes.dart';
 
 import 'context/helper.dart';
 
